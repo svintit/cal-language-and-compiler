@@ -1,0 +1,106 @@
+options{
+  IGNORE_CASE = true;
+}
+
+/* MAIN TEST CODE */
+PARSER_BEGIN(MyParser)
+
+  public class MyParser {
+    public static void main(String args[]) {
+      // a simple comment
+      /* a comment /∗ with /∗ several ∗/ nested ∗/ comments */
+      begin
+    }
+  }
+
+PARSER_END(MyParser)
+
+/* SKIP THESE REGULAR EXPRESSIONS */
+SKIP : {
+      " "
+  |   "\t"
+  |   "\n"
+  |   "\r"
+  |   "\f"
+  | < "//" (<CHAR> | <DIGIT>)* ("\n" | "\r" | "\r\n") >
+  |   "/*" { commentNesting++; } : IN_COMMENT
+}
+
+<IN_COMMENT> SKIP : {
+    "/*" { commentNesting++; }
+  | "*/" { commentNesting--;
+           if (commentNesting == 0)
+              SwitchTo(DEFAULT);
+         }
+  | <~[]>
+}
+
+/* DECLARE NESTING VAR */
+TOKEN_MGR_DECLS : {
+  static int commentNesting = 0;
+}
+
+/* RESERVED WORDS */
+TOKEN : {
+    < VARIABLE: "variable" >
+  | < CONSTANT: "constant" >
+  | < RETURN: "return" >
+  | < INTEGER: "integer" >
+  | < BOOLEAN: "boolean" >
+  | < VOID: "void" >
+  | < MAIN: "main" >
+  | < IF: "if" >
+  | < ELSE: "else" >
+  | < TRUE: "true" >
+  | < FALSE: "false" >
+  | < WHILE: "while" >
+  | < BEGIN: "begin" >
+  | < END: "end" >
+  | < IS: "is" >
+}
+
+/* OPERATORS */
+TOKEN : {
+    < COMMA: "," >
+  | < SEMICOL: ";" >
+  | < COLON: ":" >
+  | < ASSIGN: ":=" >
+  | < L_BRACK: "(" >
+  | < R_BRACK: ")" >
+  | < PLUS: "+" >
+  | < MINUS: "-" >
+  | < BITNOT: "~" >
+  | < BITOR: "|" >
+  | < BITAND: "&" >
+  | < EQUAL: "=" >
+  | < N_EQUAL: "!=" >
+  | < L_THAN: "<" >
+  | < L_OR_EQU: "<=" >
+  | < G_THAN: ">" >
+  | < G_OR_EQU: ">=" >
+}
+
+/* REGULAR EXPRESSIONS */
+TOKEN : {
+    < #DIGIT: ["0"-"9"] >
+  | < #CHAR: ["a"-"z"] | ["A"-"Z"] >
+  | < NUM: ("+" | "-")?["1"-"9"](<DIGIT>)* | "0" >
+  | < ID: (<CHAR>) ((<DIGIT>) | (<CHAR>) | "_")* >
+}
+
+/* ANY OTHER EXPRESSION THAT EXISTS */
+TOKEN : {
+  < OTHER : ~[] >
+}
+
+/* GRAMMAR AND PRODUCTION RULES */
+void Start () : {} {
+  (
+    <VARIABLE> | <CONSTANT> | <RETURN> | <INTEGER> | <BOOLEAN> | <VOID> | <MAIN> | <IF> | <ELSE> | <TRUE> | <FALSE> | <WHILE> | <BEGIN> | <END> | <IS> |
+    <COMMA> | <SEMICOL> | <COLON> | <ASSIGN> | <L_BRACK> | <R_BRACK> | <PLUS> | <MINUS> | <BITNOT> | <BITOR> | <BITAND> | <EQUAL> | <N_EQUAL> | <L_THAN> | <L_OR_EQU> | <G_THAN> | <G_OR_EQU> |
+    <NUM> | <ID> |
+    <OTHER>
+  )*
+
+  <EOF>
+}
