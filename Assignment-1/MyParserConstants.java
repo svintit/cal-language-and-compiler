@@ -39,49 +39,51 @@ public interface MyParserConstants {
   /** RegularExpression Id. */
   int IS = 25;
   /** RegularExpression Id. */
-  int COMMA = 26;
+  int SKIPPY = 26;
   /** RegularExpression Id. */
-  int SEMICOL = 27;
+  int COMMA = 27;
   /** RegularExpression Id. */
-  int COLON = 28;
+  int SEMICOL = 28;
   /** RegularExpression Id. */
-  int ASSIGN = 29;
+  int COLON = 29;
   /** RegularExpression Id. */
-  int L_BRACK = 30;
+  int ASSIGN = 30;
   /** RegularExpression Id. */
-  int R_BRACK = 31;
+  int L_BRACK = 31;
   /** RegularExpression Id. */
-  int PLUS = 32;
+  int R_BRACK = 32;
   /** RegularExpression Id. */
-  int MINUS = 33;
+  int PLUS = 33;
   /** RegularExpression Id. */
-  int BITNOT = 34;
+  int MINUS = 34;
   /** RegularExpression Id. */
-  int BITOR = 35;
+  int BITNOT = 35;
   /** RegularExpression Id. */
-  int BITAND = 36;
+  int BITOR = 36;
   /** RegularExpression Id. */
-  int EQUAL = 37;
+  int BITAND = 37;
   /** RegularExpression Id. */
-  int N_EQUAL = 38;
+  int EQUAL = 38;
   /** RegularExpression Id. */
-  int L_THAN = 39;
+  int N_EQUAL = 39;
   /** RegularExpression Id. */
-  int L_OR_EQU = 40;
+  int L_THAN = 40;
   /** RegularExpression Id. */
-  int G_THAN = 41;
+  int L_OR_EQU = 41;
   /** RegularExpression Id. */
-  int G_OR_EQU = 42;
+  int G_THAN = 42;
   /** RegularExpression Id. */
-  int DIGIT = 43;
+  int G_OR_EQU = 43;
   /** RegularExpression Id. */
-  int CHAR = 44;
+  int DIGIT = 44;
   /** RegularExpression Id. */
-  int NUM = 45;
+  int CHAR = 45;
   /** RegularExpression Id. */
-  int ID = 46;
+  int NUM = 46;
   /** RegularExpression Id. */
-  int OTHER = 47;
+  int ID = 47;
+  /** RegularExpression Id. */
+  int OTHER = 48;
 
   /** Lexical state. */
   int DEFAULT = 0;
@@ -116,6 +118,7 @@ public interface MyParserConstants {
     "\"begin\"",
     "\"end\"",
     "\"is\"",
+    "\"skip\"",
     "\",\"",
     "\";\"",
     "\":\"",
