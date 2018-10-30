@@ -123,7 +123,7 @@ TOKEN : {
 TOKEN : {
     < #DIGIT: ["0"-"9"] >
   | < #CHAR: ["a"-"z", "A"-"Z"] >
-  | < NUM: ((<MINUS>)? ["1"-"9"] (<DIGIT>)*) | "0" >
+  | < NUM: ((<MINUS>)? ["1"-"9"] (<DIGIT>)*) | ((<MINUS>)? ["0"]) >
   | < ID: (<CHAR>) ((<DIGIT>) | (<CHAR>) | "_")* >
 }
 

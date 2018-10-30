@@ -1,55 +1,3 @@
-main
-begin
-end
-
-Main
-begin
-eND
-
-MAIN
-begin
-end
-
-// NEXT
-
-main
-begin
-  // a simple comment
-  /* a comment /∗ with /∗ several ∗/ nested ∗/ comments */
-end
-
-// NEXT
-
-void func () is
-begin
-  return ();
-end
-
-main
-begin
-  func ();
-end
-
-// NEXT
-
-variable i:integer;
-integer test_fn (x:integer) is
-  variable i:integer;
-begin
-  i := 2;
-  return (x);
-end
-
-main
-begin
-  variable i:integer;
-
-  i := 1;
-  i := test_fn (i);
-end
-
-// NEXT
-
 integer multiply (x:integer, y:integer) is
   variable result:integer;
   variable minus_sign : boolean;
@@ -58,7 +6,7 @@ begin
   if (x < 0 & y >= 0)
   begin
     minus_sign := true;
-    x := −x;
+    x := -x;
   end
   else
   begin
@@ -66,15 +14,15 @@ begin
 
     begin
       minus_sign := true;
-      y := −y;
+      y := -y;
     end
     else
     begin
       if (x < 0) & y < 0
       begin
         minus_sign := false;
-        x := −x;
-        y := −y;
+        x := -x;
+        y := -y;
       end
       else
       begin
@@ -83,17 +31,17 @@ begin
     end
   end
 
-  result := 0;
+  result := -0;
 
   while (y > 0)
   begin
     result := result + x;
-    y := y − 1;
+    y := y - 1;
   end
 
-  if minus_sign := true
+  if minus_sign = true
   begin
-    result := −result;
+    result := -result;
   end
   else
   begin
@@ -111,7 +59,7 @@ begin
   constant five:integer := 5;
 
 
-  arg_1 := −6;
+  arg_1 := -6;
   arg_2 := five;
 
   result := multiply (arg_1, arg_2);
