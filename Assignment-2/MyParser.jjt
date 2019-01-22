@@ -1,0 +1,354 @@
+/*******************************
+***** SECTION 1 - OPTIONS *****
+*******************************/
+
+options{
+  JAVA_UNICODE_ESCAPE = true;
+  IGNORE_CASE = true;
+  VISITOR = true;
+  MULTI = true;
+  NODE_DEFAULT_VOID = true;
+}
+
+/*********************************
+***** SECTION 2 - USER CODE *****
+*********************************/
+
+PARSER_BEGIN(MyParser)
+
+  import java.util.*;
+
+  public class MyParser {
+    public static STC ST = new STC();
+    public static String scope = "global";
+
+    public static Hashtable ht = new Hashtable();
+
+    public static void main(String args[]) {
+      MyParser tokeniser;
+
+      if (args.length == 0) {
+        System.out.println("Reading from standard input...");
+        tokeniser = new MyParser(System.in);
+      }
+      else if (args.length == 1) {
+        try {
+          tokeniser = new MyParser(new java.io.FileInputStream(args[0]));
+        }
+        catch (java.io.FileNotFoundException e) {
+          System.err.printf("File %s not found.\n", args[0]);
+          return;
+        }
+      }
+      else {
+        System.out.println("MyParser: Usage is one of:");
+        System.out.println("      java MyParser < inputfile");
+        System.out.println("OR");
+        System.out.println("      java MyParser inputfile");
+        return;
+      }
+      try {
+        SimpleNode root = tokeniser.Program();
+        System.out.println("\n                ************************\n                * Abstract Syntax Tree *\n                ************************\n");
+        root.dump("");
+
+        System.out.print("\n                   ****************\n                   * Symbol Table *\n                   ****************\n\n");
+        ST.print();
+        
+        TypeCheckVisitor tcv = new TypeCheckVisitor();
+        System.out.println("\n                *********************\n                * Semantic Analysis *\n                *********************\n");
+        root.jjtAccept(tcv, ht);
+
+        ThreeAddressCode taci = new ThreeAddressCode();
+        System.out.println("\n               **********************\n               * Three Address Code *\n               **********************");
+        System.out.println("  -> Also Outputted to file: ThreeAddressCode.ir <-\n");
+        root.jjtAccept(taci, null);
+		  }
+  		catch (ParseException e) {
+        System.out.println("Encountered errors during parsing.");
+        e.printStackTrace();
+  			//System.out.println(e.getMessage());
+  		}
+    }
+  }
+
+PARSER_END(MyParser)
+
+/****************************************
+***** SECTION 3 - TOKEN DEFINITIONS *****
+****************************************/
+
+/* DECLARE NESTING VAR */
+TOKEN_MGR_DECLS : {
+    static int commentNesting = 0;
+}
+
+/* SKIP WHITESPACE AND COMMENTS */
+SKIP : {
+    " "
+  | "\t"
+  | "\n"
+  | "\r"
+  | "\f"
+  | "/*" { commentNesting++; } : IN_COMMENT
+  | < "//" (~["\r", "\n"])* >
+}
+
+<IN_COMMENT> SKIP : {
+    "/*" { commentNesting++; }
+  | "*/" { commentNesting--;
+           if (commentNesting == 0)
+              SwitchTo(DEFAULT);
+         }
+  | <~[]>
+}
+
+/* RESERVED WORDS */
+TOKEN : {
+    < VARIABLE: "variable" >
+  | < CONSTANT: "constant" >
+  | < RETURN: "return" >
+  | < INTEGER: "integer" >
+  | < BOOLEAN: "boolean" >
+  | < VOID: "void" >
+  | < MAIN: "main" >
+  | < IF: "if" >
+  | < ELSE: "else" >
+  | < TRUE: "true" >
+  | < FALSE: "false" >
+  | < WHILE: "while" >
+  | < BEGIN: "begin" >
+  | < END: "end" >
+  | < IS: "is" >
+  | < SKIPPY: "skip" >
+}
+
+/* OPERATORS */
+TOKEN : {
+    < COMMA: "," >
+  | < SEMICOL: ";" >
+  | < COLON: ":" >
+  | < ASSIGN: ":=" >
+  | < L_BRACK: "(" >
+  | < R_BRACK: ")" >
+  | < PLUS: "+" >
+  | < MINUS: "-" >
+  | < BITNOT: "~" >
+  | < BITOR: "|" >
+  | < BITAND: "&" >
+  | < EQUAL: "=" >
+  | < N_EQUAL: "!=" >
+  | < L_THAN: "<" >
+  | < L_OR_EQU: "<=" >
+  | < G_THAN: ">" >
+  | < G_OR_EQU: ">=" >
+}
+
+/* REGULAR EXPRESSIONS */
+TOKEN : {
+    < #DIGIT: ["0"-"9"] >
+  | < #CHAR: ["a"-"z", "A"-"Z"] >
+  | < NUM: ((<MINUS>)? ["1"-"9"] (<DIGIT>)*) | ((<MINUS>)? ["0"]) >
+  | < ID: (<CHAR>) ((<DIGIT>) | (<CHAR>) | "_")* >
+}
+
+/* ANY OTHER EXPRESSION THAT EXISTS */
+TOKEN : {
+    < OTHER : ~[] >
+}
+
+/***********************************
+***** SECTION 4 - THE GRAMMAR *****
+***********************************/
+
+SimpleNode Program() #Program : {} {
+    DeclList() FunctionList() Main() <EOF> {
+      return jjtThis;
+    }
+}
+
+void DeclList() : {} {
+    (Decl())*
+}
+
+void Decl() : {} {
+    (VarDecl() | ConstDecl()) <SEMICOL>
+}
+
+void VarDecl() #VariableDeclaration : {Token t; String id; String type;} {
+    t = <VARIABLE> id = Identifier() <COLON> type = Type() {
+      jjtThis.value = t.image;
+      ST.put(id, type, "variable", scope);
+    }
+}
+
+void ConstDecl() #ConstantDeclaration : {Token t; String id; String type;} {
+    t = <CONSTANT> id = Identifier() <COLON> type = Type() ConstantAssign() {
+      ST.put(id, type, "constant", scope);
+    } 
+}
+
+void ConstantAssign() : {Token t;} {
+    t = <ASSIGN> Expression() {
+      jjtThis.value = t.image;
+    } #ConstantAssign(1)
+}
+
+void FunctionList() : {} {
+    (Function())*
+}
+
+void Function() #Function : {Token t; String type; String id;} {
+    type = Type() id = Identifier() {
+      jjtThis.value = id;
+      scope = id;
+      ST.put(id, type, "function", scope);
+    }
+    <L_BRACK> ParameterList() <R_BRACK> 
+    <IS> DeclList()
+    <BEGIN>
+    StatementBlock()
+    <RETURN> <L_BRACK> (Expression() | {}) <R_BRACK> <SEMICOL> #FunctionReturn(1)
+    <END>
+}
+
+String Type() #Type : {Token t;} {
+  (t = <INTEGER> | t = <BOOLEAN> | t = <VOID>) {
+    jjtThis.value = t.image;
+    return t.image;
+  }
+} 
+
+void ParameterList() : {} {
+    (NempParameterList() NempParameterListPrime())
+  | {}
+}
+
+void NempParameterList() #ParameterList : {String id; String type;} {
+    id = Identifier() <COLON> type = Type() {
+      ST.put(id, type, "parameter", scope);
+    }
+}
+
+void NempParameterListPrime() : {} {
+    (<COMMA> NempParameterList())
+  | {}
+}
+
+void Main() #Main : {Token t;} {
+    {scope = "main";}
+    t = <MAIN>
+    <BEGIN>
+    DeclList()
+    StatementBlock()
+    <END>
+}
+
+void StatementBlock() : {} {
+    (Statement())*
+}
+
+void Statement() #Statement : {Token t;} {
+    Identifier() ((t = <ASSIGN> Expression() <SEMICOL> {
+      jjtThis.value = t.image;
+    })
+  | (t = <L_BRACK> ArgList() <R_BRACK> <SEMICOL>) {
+      jjtThis.value = "Process_Call";
+    })
+  | (t = <BEGIN> StatementBlock() <END> {
+      jjtThis.value = t.image;
+    })
+  | (t = <IF> Condition() <BEGIN> StatementBlock() <END> <ELSE> <BEGIN> StatementBlock() <END> {
+      jjtThis.value = t.image;
+    })
+  | (t = <WHILE> Condition() <BEGIN> StatementBlock() <END> {
+      jjtThis.value = t.image;
+    })
+  | (<SKIPPY> <SEMICOL>)
+}
+
+void Expression() : {} {
+  (Fragment() BinaryArithOp())
+| (<L_BRACK> Expression() <R_BRACK> BinaryArithOp())
+}
+
+void BinaryArithOp() : {Token t;} {
+    (t = <PLUS> Expression() {
+      jjtThis.value = t.image;
+    }) #PlusOperator(2)
+  | (t = <MINUS> Expression() {
+      jjtThis.value = t.image;
+    }) #MinusOperator(2)
+  | {}
+}
+
+void Fragment() : {} {
+    (<MINUS>)? (Identifier() (<L_BRACK> ArgList() <R_BRACK> | {}))
+  | Number()
+  | Boolean()
+}
+
+void Condition() : {} {
+    (<BITNOT> Condition() ConditionPrime())
+  | LOOKAHEAD(3) (<L_BRACK> Condition() <R_BRACK> ConditionPrime())
+  | (Expression() CompOp() ConditionPrime())
+}
+
+void ConditionPrime() : {Token t;} {
+    (t = <BITOR> Condition() ConditionPrime() {
+      jjtThis.value = t.image;
+    }) #BitOrOperator(2)
+  | (t = <BITAND> Condition() ConditionPrime() {
+      jjtThis.value = t.image;
+    }) #BitAndOperator(2)
+  | {}
+}
+
+void CompOp() : {Token t;} {
+    (t = <EQUAL> Expression() {
+      jjtThis.value = t.image;
+    }) #EqualOperator(2)
+  | (t = <N_EQUAL> Expression() {
+      jjtThis.value = t.image;
+    }) #NotEqualOperator(2)
+  | (t = <L_THAN> Expression() {
+      jjtThis.value = t.image;
+    }) #LessThanOperator(2)
+  | (t = <L_OR_EQU> Expression() {
+      jjtThis.value = t.image;
+    }) #LessOrEqualOperator(2)
+  | (t = <G_THAN> Expression() {
+      jjtThis.value = t.image;
+    }) #GreaterThanOperator(2)
+  | (t = <G_OR_EQU> Expression() {
+      jjtThis.value = t.image;
+    }) #GreaterOrEqualOperator(2)
+}
+
+void ArgList() : {} {
+    NempArgList()
+  | {}
+}
+
+void NempArgList() #ArgumentList: {} {
+    (Identifier() ((<COMMA> NempArgList()) | {}))
+} 
+
+String Identifier() #Identifier : {Token t;} {
+    (t = <ID> {
+      jjtThis.value = t.image;
+      return t.image;
+    }) 
+} 
+
+void Boolean() #Boolean : {Token t;} {
+  ((t = <TRUE> | t = <FALSE>) {
+    jjtThis.value = t.image;
+  }) 
+}
+
+void Number() #Number : {Token t;} {
+    (t = <NUM> {
+      jjtThis.value = t.image;
+    }) 
+}
