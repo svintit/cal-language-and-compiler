@@ -1,3 +1,3 @@
 # CAL language and compiler implementation
 
-## Parser | Three Address Code | Abstract Syntax Tree
+### Parser | Three Address Code | Abstract Syntax Tree
